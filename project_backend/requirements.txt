@@ -18,7 +18,6 @@ google-generativeai==0.8.5
 groq==0.4.2
 pydantic==2.11.7
 tqdm==4.67.1
-
 # RAG and Vector Search Dependencies
 faiss-cpu>=1.7.0
 pdfplumber>=0.10.0
@@ -26,6 +25,5 @@ PyPDF2>=3.0.0
 langchain>=0.1.0
 langchain-community>=0.0.10
 nltk>=3.8.0
-
 # NOTE: Use environment variables for all secrets (e.g., FLASK_SECRET_KEY, GROQ_API_KEY)
 # Logging is used for all backend status and error reporting

@@ -339,7 +339,8 @@ class RAGService:
         6. If the information is not available, clearly state that
         """
         
-        return self.llm_service.generate_response(enhanced_prompt, organized_context)
+        # Use generate_response_from_prompt since we have a fully formatted prompt
+        return self.llm_service.generate_response_from_prompt(enhanced_prompt, temperature=0.3, max_tokens=800)
     
     def generate_greeting_response(self) -> str:
         """Generate a professional greeting response"""
@@ -364,7 +365,7 @@ class RAGService:
                 "context_used": False,
                 "sources": [],
                 "suggested_responses": [
-                    "Tell me about your tech services",
+                    "what are your services?",
                     "What are your pricing plans?",
                     "I need technical support",
                     "How can I contact you?"
@@ -393,7 +394,7 @@ class RAGService:
                 "context_used": False,
                 "sources": [],
                 "suggested_responses": [
-                    "Tell me about your tech services",
+                    "what are your services?",
                     "What are your pricing plans?",
                     "I need technical support",
                     "How can I contact you?"
@@ -429,7 +430,7 @@ class RAGService:
                     "context_used": False,
                     "sources": [],
                     "suggested_responses": [
-                        "Tell me about your tech services",
+                        "what are your services?",
                         "What are your pricing plans?",
                         "I need technical support",
                         "How can I contact you?"
@@ -448,7 +449,7 @@ class RAGService:
                 "context_used": False,
                 "sources": [],
                 "suggested_responses": [
-                    "Tell me about your tech services",
+                    "what are your services?",
                     "What are your pricing plans?",
                     "I need technical support",
                     "How can I contact you?"
@@ -510,7 +511,7 @@ class RAGService:
             ]
         else:
             return [
-                "Tell me about your tech services",
+                "what are your services?",
                 "What are your pricing plans?",
                 "I need technical support",
                 "How can I contact you?"
@@ -804,8 +805,8 @@ Instructions:
 Response:"""
         
         try:
-            # Let GroqService handle all signature management
-            response = self.llm_service.generate_response(prompt)
+            # Use generate_response_from_prompt since we already have a fully formatted prompt
+            response = self.llm_service.generate_response_from_prompt(prompt, temperature=0.3, max_tokens=800)
             
             # Check if response is valid
             if not response or len(response.strip()) < 30 or re.match(r'^\*\*.*\*\*:?$', response.strip()): # Changed threshold to 30

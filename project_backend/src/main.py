@@ -1,6 +1,8 @@
 import os
 import sys
+from dotenv import load_dotenv
 
+load_dotenv()  # <-- this line loads your .env automatically
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
@@ -48,7 +50,7 @@ def serve(path):
 if __name__ == '__main__':
     # Only enable debug mode if explicitly set in environment
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    
+    port = int(os.getenv('PORT', 8080)) 
     if debug_mode:
         # Configure extra directories to watch only project files, not entire environment
         extra_dirs = [
@@ -66,10 +68,10 @@ if __name__ == '__main__':
         
         app.run(
             host='0.0.0.0', 
-            port=5000, 
+            port=port, 
             debug=True,
             extra_files=extra_files,
             use_reloader = False
         )
     else:
-        app.run(host='0.0.0.0', port=5000, debug=False)
+        app.run(host='0.0.0.0', port=port, debug=False)

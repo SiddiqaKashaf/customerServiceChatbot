@@ -1,17 +1,23 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Input } from '@/components/ui/input.jsx'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx'
+import { Badge } from '@/components/ui/badge.jsx'
 import { ScrollArea } from '@/components/ui/scroll-area.jsx'
+import { Separator } from '@/components/ui/separator.jsx'
 import {
   Send,
   Bot,
+  User,
+  MessageCircle,
+  Sparkles,
+  Clock,
+  ThumbsUp,
+  ThumbsDown,
   Copy,
   RotateCcw,
   Mic,
-  Paperclip,
-  Sparkles,
-  Moon,
-  Sun
+  Paperclip
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
@@ -19,7 +25,7 @@ import ReactMarkdown from 'react-markdown'
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 // Memoized Message Component
-const Message = memo(({ message, copyMessage, darkMode }) => {
+const Message = memo(({ message, copyMessage }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -31,24 +37,17 @@ const Message = memo(({ message, copyMessage, darkMode }) => {
       <div className={`relative flex flex-col max-w-[85%] ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
         <div className={`flex items-end gap-3`}>
           {message.role === 'assistant' && (
-            <div className={`flex-shrink-0 w-10 h-10 rounded-2xl ${darkMode ? 'bg-gradient-to-br from-pink-500 to-indigo-600' : 'bg-gradient-to-br from-indigo-600 to-purple-700'} flex items-center justify-center shadow-lg`}>
+            <div className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-lg">
               <Bot className="h-5 w-5 text-white" />
             </div>
           )}
           <div
-            className={`relative rounded-2xl transition-all duration-300 px-5 py-3 text-sm font-normal whitespace-pre-line break-words shadow-lg
-              ${message.role === 'user'
-                ? darkMode
-                  ? 'bg-gradient-to-r from-pink-500 via-fuchsia-500 to-indigo-600 text-white border border-pink-400/60 shadow-[0_4px_24px_0_rgba(232,162,255,0.15)]'
-                  : 'bg-gradient-to-r from-indigo-700 to-purple-800 text-white border border-indigo-600/50'
-                : message.isError
-                  ? darkMode
-                    ? 'bg-gradient-to-br from-pink-900/80 to-red-700/80 text-pink-100 border border-pink-400/60 shadow-[0_4px_24px_0_rgba(232,162,255,0.10)]'
-                    : 'bg-red-50/90 text-red-900 border-red-200/50'
-                  : darkMode
-                    ? 'bg-white/10 text-pink-100 border border-indigo-400/40 shadow-[0_4px_24px_0_rgba(162,162,255,0.10)] backdrop-blur-xl'
-                    : 'bg-white/95 text-gray-800 border-gray-200/50 backdrop-blur-sm'
-            } group-hover:shadow-xl`}
+            className={`relative rounded-2xl border transition-all duration-300 px-5 py-3 text-sm font-normal whitespace-pre-line break-words shadow-lg ${message.role === 'user'
+              ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-indigo-400/30'
+              : message.isError
+                ? 'bg-red-50/90 text-red-900 border-red-200/50'
+                : 'bg-white/95 text-gray-800 border-gray-200/50 backdrop-blur-sm'
+              } group-hover:shadow-xl`}
             tabIndex={0}
             aria-label={message.role === 'user' ? 'Your message' : 'Bot message'}
           >
@@ -61,7 +60,7 @@ const Message = memo(({ message, copyMessage, darkMode }) => {
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-7 w-7 p-0 hover:bg-pink-500/10 active:scale-95 rounded-full text-pink-200" 
+                className="h-7 w-7 p-0 hover:bg-indigo-50 active:scale-95 rounded-full" 
                 aria-label="Copy message" 
                 onClick={() => copyMessage(message.content)}
               >
@@ -70,7 +69,7 @@ const Message = memo(({ message, copyMessage, darkMode }) => {
             </div>
           </div>
         </div>
-        <span className={`text-xs ${darkMode ? 'text-pink-200' : 'text-gray-500'} mt-2 ml-12`}>
+        <span className="text-xs text-gray-400 mt-2 ml-12">
           {new Date(message.timestamp).toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit'
@@ -84,14 +83,14 @@ const Message = memo(({ message, copyMessage, darkMode }) => {
 // Typing Indicator Component
 const TypingIndicator = () => (
   <div className="flex items-center gap-3 mt-2">
-    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center shadow-lg">
+    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-lg">
       <Bot className="h-5 w-5 text-white" />
     </div>
-    <div className="flex items-center gap-1 bg-gray-800/80 rounded-2xl px-4 py-2 shadow-lg border border-gray-700/50">
-      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></span>
-      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></span>
-      <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
-      <span className="text-xs text-gray-400 ml-3 font-medium">Thinking...</span>
+    <div className="flex items-center gap-1 bg-white/90 rounded-2xl px-4 py-2 shadow-lg">
+      <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></span>
+      <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></span>
+      <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+      <span className="text-xs text-gray-600 ml-3 font-medium">Thinking...</span>
     </div>
   </div>
 );
@@ -102,7 +101,6 @@ export default function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false)
   const [conversationId, setConversationId] = useState(null)
   const [suggestedResponses, setSuggestedResponses] = useState([])
-  const [darkMode, setDarkMode] = useState(true)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -110,7 +108,7 @@ export default function ChatInterface() {
   const initialSuggestions = [
     "What are your pricing plans?",
     "How can I contact you?",
-    "what are your services?",
+    "Tell me about your tech services",
     "What are your payment terms?"
   ]
 
@@ -240,36 +238,29 @@ export default function ChatInterface() {
   }, []);
 
   return (
-    <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-gradient-to-br from-[#1a1a40] via-[#23235b] to-[#2d2d6a]' : 'bg-gray-100'} font-sans transition-colors duration-300`}>
-      <div className={`w-full max-w-[600px] h-[95vh] flex flex-col ${darkMode ? 'bg-white/10 backdrop-blur-2xl text-white border border-[#3a3a7a] shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]' : 'bg-white text-gray-800 border border-gray-200'} rounded-3xl shadow-2xl overflow-hidden transition-colors duration-300`}>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-indigo-50 to-purple-50 font-sans">
+      <div className="w-full max-w-[600px] h-[95vh] flex flex-col bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 overflow-hidden">
         {/* Header */}
-        <div className={`flex items-center justify-between px-6 py-4 ${darkMode ? 'bg-gradient-to-r from-[#23235b] to-[#3a3a7a] border-b border-[#3a3a7a]' : 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white'} relative`}>
+        <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-indigo-700 to-purple-700 text-white relative">
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-pink-500 rounded-full animate-pulse"></div>
+            <div className="w-3 h-3 bg-teal-400 rounded-full animate-pulse"></div>
             <div className="flex-1">
               <div className="text-lg font-semibold tracking-tight flex items-center gap-2">
-                <Sparkles className={`h-4 w-4 ${darkMode ? 'text-pink-400' : 'text-white'}`} />
+                <Sparkles className="h-4 w-4 text-teal-300" />
                 <span>TechCorp Assistant</span>
               </div>
-              <div className={`text-xs ${darkMode ? 'text-pink-200' : 'text-blue-100'} font-medium`}>
-                AI-Powered Support <span className="mx-1">•</span> <span className={darkMode ? "text-pink-300" : "text-white/80"}>built by Siddiqa Kashaf</span>
+              <div className="text-xs text-indigo-100 font-medium">
+                AI-Powered Support <span className="mx-1">•</span> <span className="text-white/80">built by Siddiqa Kashaf</span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-teal-400 rounded-full"></div>
+            <span className="text-xs text-indigo-100">Online</span>
             <Button
               variant="ghost"
               size="icon"
-              className={darkMode ? "text-pink-200 hover:bg-pink-500/10" : "text-white/80 hover:bg-white/10"}
-              aria-label="Toggle theme"
-              onClick={() => setDarkMode(!darkMode)}
-            >
-              {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={darkMode ? "text-pink-200 hover:bg-pink-500/10" : "text-white/80 hover:bg-white/10"}
+              className="ml-2 text-white/80 hover:bg-white/10"
               aria-label="Clear chat"
               onClick={clearConversation}
             >
@@ -279,8 +270,8 @@ export default function ChatInterface() {
         </div>
         
         {/* Messages Area */}
-        <div className={`flex-1 overflow-hidden ${darkMode ? 'bg-gradient-to-b from-[#23235b]/60 to-[#1a1a40]/80' : 'bg-gradient-to-b from-blue-50/30 to-white/50'} relative`}>
-          <div className={`absolute inset-0 ${darkMode ? "bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0xIC0xKSIgc3Ryb2tlPSIjZThhMmZmIiBzdHJva2Utd2lkdGg9IjEuNSI+PHBhdGggZD0iTTAgMGg2MHY2MEgweiIvPjwvZz48L2c+PC9zdmc+')]" : "bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0xIC0xKSIgc3Ryb2tlPSJyZ2JhKDIyMSwgMjE2LCAyNDUsIDAuMSkiIHN0cm9rZS13aWR0aD0iMiI+PHBhdGggZD0iTTAgMGg2MHY2MEgweiIvPjwvZz48L2c+PC9zdmc+')]"} opacity-10`}></div>
+        <div className="flex-1 overflow-hidden bg-gradient-to-b from-indigo-50/20 via-white/30 to-white/50 relative">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgdmlld0JveD0iMCAwIDYwIDYwIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0xIC0xKSIgc3Ryb2tlPSJyZ2JhKDIyMSwgMjE2LCAyNDUsIDAuMSkiIHN0cm9rZS13aWR0aD0iMiI+PHBhdGggZD0iTTAgMGg2MHY2MEgweiIvPjwvZz48L2c+PC9zdmc+')] opacity-10"></div>
           <ScrollArea className="h-full px-2 sm:px-6 py-4 sm:py-6 relative">
             <div className="flex flex-col gap-4">
               <AnimatePresence initial={false}>
@@ -289,7 +280,6 @@ export default function ChatInterface() {
                     key={message.id} 
                     message={message} 
                     copyMessage={copyMessage} 
-                    darkMode={darkMode}
                   />
                 ))}
               </AnimatePresence>
@@ -302,7 +292,7 @@ export default function ChatInterface() {
         
         {/* Suggested Responses */}
         {suggestedResponses.length > 0 && (
-          <div className={`px-2 sm:px-6 py-2 sm:py-4 ${darkMode ? 'bg-white/10 border-t border-[#3a3a7a] backdrop-blur-xl' : 'bg-gradient-to-r from-blue-50/80 to-indigo-50/80 border-t border-blue-200/50 backdrop-blur-sm'}`}>
+          <div className="px-2 sm:px-6 py-2 sm:py-4 bg-gradient-to-r from-indigo-50/80 to-purple-50/80 border-t border-indigo-200/50 backdrop-blur-sm">
             <div className="flex flex-wrap gap-2 justify-center">
               {suggestedResponses.map((suggestion, idx) => (
                 <motion.div
@@ -313,7 +303,7 @@ export default function ChatInterface() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className={`rounded-full text-xs font-medium px-4 py-2 transition-all duration-200 ${darkMode ? 'border-pink-400 text-pink-200 bg-[#23235b]/80 hover:bg-pink-500/20 hover:border-pink-400' : 'border-indigo-300/50 text-indigo-700 hover:bg-indigo-100/80 hover:border-indigo-400/50'}`}
+                    className="rounded-full border-indigo-300/50 text-indigo-700 hover:bg-indigo-100/80 hover:border-indigo-400/50 transition-all duration-200 text-xs font-medium px-4 py-2"
                     onClick={() => sendMessage(suggestion)}
                     disabled={isLoading}
                   >
@@ -326,7 +316,7 @@ export default function ChatInterface() {
         )}
         
         {/* Input Area */}
-        <div className={`px-2 sm:px-6 py-2 sm:py-4 ${darkMode ? 'bg-white/10 border-t border-[#3a3a7a] backdrop-blur-xl' : 'bg-white border-t border-gray-200 backdrop-blur-sm'}`}>
+        <div className="px-2 sm:px-6 py-2 sm:py-4 bg-white/95 border-t border-indigo-200/50 backdrop-blur-sm sticky bottom-0 z-10">
           <form 
             onSubmit={e => { 
               e.preventDefault(); 
@@ -341,25 +331,21 @@ export default function ChatInterface() {
               onKeyDown={handleKeyPress}
               placeholder="Ask me anything about TechCorp Solutions..."
               disabled={isLoading}
-              className={`flex-1 rounded-2xl px-5 py-3 text-sm ${darkMode ? 'bg-[#1a1a40]/80 border-pink-400/60 !text-pink-100 focus:border-pink-400 focus:ring-pink-400/30 shadow-[0_4px_24px_0_rgba(232,162,255,0.15)]' : 'bg-white/90 border-gray-300 text-gray-800 focus:border-indigo-500 focus:ring-indigo-500/20 shadow-sm'} backdrop-blur-sm`}
-              style={darkMode ? { 
-                color: '#fce7f3'
-              } : undefined}
-              data-dark-mode={darkMode}
+              className="flex-1 rounded-2xl px-5 py-3 text-sm border-indigo-300/50 focus:border-indigo-500 focus:ring-indigo-500/20 shadow-sm bg-white/90 backdrop-blur-sm"
               aria-label="Type your message here"
             />
             
             <Button
               type="submit"
               disabled={!inputValue.trim() || isLoading}
-              className={`rounded-2xl px-5 py-3 text-white font-semibold shadow-lg text-sm transition-all duration-200 ${darkMode ? 'bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800' : 'bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800'}`}
+              className="rounded-2xl px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold shadow-lg text-sm transition-all duration-200"
               aria-label="Send message"
             >
               <Send className="h-4 w-4" />
             </Button>
           </form>
           
-          <div className={`mt-2 text-center text-xs ${darkMode ? 'text-pink-200/80' : 'text-gray-400'}`}>
+          <div className="mt-2 text-center text-xs text-gray-400">
             Powered by AI • Responses may vary
           </div>
         </div>

@@ -1,16 +1,27 @@
 import os
 import requests
+import logging
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
 # Load environment variables from .env
 load_dotenv()
 
+# Set up logging
+logger = logging.getLogger(__name__)
+
 class GroqService:
     def __init__(self):
         self.api_key = os.getenv('GROQ_API_KEY')
-        self.model_name = os.getenv('GROQ_MODEL', 'llama3-8b-8192')
+        logger.info(f"GROQ_API_KEY Loaded: {bool(self.api_key)}")
+        # Updated to use valid Groq model name format
+        self.model_name = os.getenv('GROQ_MODEL', 'llama-3.1-8b-instant')
+        logger.info(f"Using Groq model: {self.model_name}")
         self.api_url = 'https://api.groq.com/openai/v1/chat/completions'
+        
+        if not self.api_key:
+            logger.warning("GROQ_API_KEY is not set in environment variables!")
+        
         self.headers = {
             'Authorization': f'Bearer {self.api_key}',
             'Content-Type': 'application/json'
@@ -47,6 +58,14 @@ FORMATTING EXAMPLES:
 Remember: Be specific, professional, and well-formatted. Focus on what the customer asked for. DO NOT include any signature or closing - the system will add it automatically."""
 
     def _chat(self, messages, temperature=0.3, top_p=0.9, max_tokens=800, stop=None):
+        # Groq API requires temperature > 0, ensure minimum value
+        if temperature <= 0:
+            temperature = 0.1
+        
+        # Ensure max_tokens is within reasonable limits (some models have limits)
+        if max_tokens > 8192:
+            max_tokens = 8192
+        
         data = {
             'model': self.model_name,
             'messages': messages,
@@ -54,28 +73,82 @@ Remember: Be specific, professional, and well-formatted. Focus on what the custo
             'top_p': top_p,
             'max_tokens': max_tokens
         }
-        if stop:
-            data['stop'] = stop
+        
+        # Groq API may not support stop parameter or may require different format
+        # Only include stop if it's a string or valid format
+        # For now, we'll remove it to avoid 400 errors
+        # if stop:
+        #     # Groq supports stop as a string or array of strings
+        #     # But some models may not support it, so we'll skip it
+        #     pass
+        
         try:
             response = requests.post(self.api_url, headers=self.headers, json=data, timeout=30)
+            
+            # Better error handling - show actual API error response
+            if response.status_code != 200:
+                error_detail = response.text
+                try:
+                    error_json = response.json()
+                    error_detail = error_json.get('error', {}).get('message', error_detail)
+                    error_type = error_json.get('error', {}).get('type', 'unknown')
+                    logger.error(f"Groq API error ({response.status_code}) [{error_type}]: {error_detail}")
+                except:
+                    logger.error(f"Groq API error ({response.status_code}): {error_detail}")
+                logger.error(f"Request data: model={self.model_name}, messages_count={len(messages)}, max_tokens={max_tokens}, temperature={temperature}")
+                return None
+                
             response.raise_for_status()
             result = response.json()
             return result['choices'][0]['message']['content'].strip()
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Groq API request error: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_detail = e.response.json()
+                    logger.error(f"Error details: {error_detail}")
+                except:
+                    logger.error(f"Error response: {e.response.text}")
+            return None
         except Exception as e:
-            print(f"Groq API error: {e}")
+            logger.error(f"Groq API error: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return None
 
     def generate_response(self, query: str, context: str = "", conversation_history: List[Dict] = None) -> str:
+        """
+        Generate a response using the query and context.
+        If query is already a full prompt (contains instructions), use generate_response_from_prompt instead.
+        """
         prompt = self._build_prompt(query, context, conversation_history)
         messages = [
             {'role': 'system', 'content': self.system_prompt},
             {'role': 'user', 'content': prompt}
         ]
-        result = self._chat(messages, temperature=0.3, top_p=0.9, max_tokens=800, stop=['Human:', 'User:'])
+        # Removed stop parameter as Groq may not support it or may cause 400 errors
+        result = self._chat(messages, temperature=0.3, top_p=0.9, max_tokens=800, stop=None)
         if result:
             return self._clean_response(result)
         else:
             return self._fallback_response(query, context)
+    
+    def generate_response_from_prompt(self, prompt: str, temperature: float = 0.3, max_tokens: int = 800) -> str:
+        """
+        Generate a response from a raw prompt (already formatted).
+        Use this when you have a fully constructed prompt and don't want additional wrapping.
+        """
+        messages = [
+            {'role': 'system', 'content': self.system_prompt},
+            {'role': 'user', 'content': prompt}
+        ]
+        result = self._chat(messages, temperature=temperature, top_p=0.9, max_tokens=max_tokens, stop=None)
+        if result:
+            return self._clean_response(result)
+        else:
+            # Extract query from prompt if possible for fallback
+            query = prompt[:100] if prompt else "your question"
+            return self._fallback_response(query, "")
 
     def _build_prompt(self, query: str, context: str = "", conversation_history: List[Dict] = None) -> str:
         prompt_parts = []
